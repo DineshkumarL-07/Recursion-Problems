@@ -1,3 +1,5 @@
+# It can be used for the both array and string 
+
 def reverse(s,ind):
 
     if ind == len(s)//2:
