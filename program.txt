@@ -1,0 +1,153 @@
+-- https://universe.roboflow.com/final-year-project-xlxtr/anomaly-detection-yjwgo
+-- https://universe.roboflow.com/dedsec/anomaly-detection-nfc3l/dataset/2
+
+
+train: D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\train
+val: D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\val
+test: D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\test
+nc: 9
+names: ['Abuse', 'Arson', 'Assault', 'Burglary', 'Explosion', 'Fighting', 'Robbery', 'Shooting', 'Vandalism']
+
+roboflow:
+  workspace: dedsec
+  project: anomaly-detection-nfc3l
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/dedsec/anomaly-detection-nfc3l/dataset/2
+
+  
+import torch
+from ultralytics import YOLO
+import cv2
+import os
+
+# Define dataset paths
+test_images_path = r"D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\test\images"
+data_yaml = r"D:\Dinesh\Normal_Activity_Model_Trained\data.yaml"
+# Load YOLO v11 model
+model = YOLO("yolo11n.pt")  # Ensure you have the correct YOLO v11 model
+
+# Train the model only on normal activity images
+model.train(data=data_yaml, epochs=20, imgsz=640)
+
+# Save the trained model
+model.save("yolo_v11_anomaly_detector.pt")
+
+# Load test images
+test_images = [os.path.join(test_images_path, f) for f in os.listdir(test_images_path) if f.endswith(('.jpg', '.png'))]
+
+# Detect anomalies in test images
+for img_path in test_images:
+    image = cv2.imread(img_path)
+    results = model(image)
+    
+    # Extract detections
+    boxes = results[0].boxes.xyxy.cpu().numpy()  # Bounding box coordinates
+    confs = results[0].boxes.conf.cpu().numpy()  # Confidence scores
+    classes = results[0].boxes.cls.cpu().numpy()  # Class labels
+    
+    # If any detection is found, classify as anomaly
+    if len(classes) > 0:
+        print(f"Anomaly detected in {img_path}")
+        cv2.imshow("Anomaly Detected", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+print("Anomaly detection completed.")
+
+import torch
+import cv2
+import os
+from ultralytics import YOLO
+
+# Define the paths
+model_path = r"D:\Dinesh\yolo_v11_anomaly_detector.pt"
+test_images_path = r"D:\Dinesh\Datasets and Labels\Person Images"
+
+# Load the trained YOLO model
+model = YOLO(model_path)  # Load the trained model
+
+# Load test images
+test_images = [os.path.join(test_images_path, f) for f in os.listdir(test_images_path) if f.endswith(('.jpg', '.png'))]
+
+# Run inference on each test image
+for img_path in test_images:
+    image = cv2.imread(img_path)  # Read the image
+    results = model(image)  # Run inference
+
+    # Extract detections
+    boxes = results[0].boxes.xyxy.cpu().numpy()  # Bounding box coordinates
+    confs = results[0].boxes.conf.cpu().numpy()  # Confidence scores
+    classes = results[0].boxes.cls.cpu().numpy()  # Class labels
+
+    # Define anomaly classes (if known)
+    anomaly_classes = [0, 1, 2, 3, 4, 5, 6, 7, 8]  # Adjust based on your labels
+
+    # Check if any detected object belongs to anomaly classes
+    if any(cls in anomaly_classes for cls in classes):
+        print(f"⚠️ Anomaly detected in: {img_path}")
+        
+        # Draw bounding boxes on the image
+        for box, conf, cls in zip(boxes, confs, classes):
+            x1, y1, x2, y2 = map(int, box)
+            label = f"Anomaly {int(cls)} ({conf:.2f})"
+            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Red box for anomaly
+            cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        # Show the image with anomalies
+        cv2.imshow("Anomaly Detected", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+print("✅ Anomaly detection completed.")
+
+
+import os
+import shutil
+import random
+
+def select_and_copy_files(source_img_dir, source_label_dir, dest_img_dir, dest_label_dir, num_samples):
+    # Get list of all images and labels
+    images = [f for f in os.listdir(source_img_dir) if f.endswith(('.jpg', '.png'))]
+    labels = [f for f in os.listdir(source_label_dir) if f.endswith('.txt')]
+    
+    # Ensure image-label matching
+    common_files = set(os.path.splitext(f)[0] for f in images) & set(os.path.splitext(f)[0] for f in labels)
+    common_files = list(common_files)
+    
+    # Randomly sample the required number of files
+    selected_files = random.sample(common_files, min(num_samples, len(common_files)))
+    
+    # Create destination folders if they don't exist
+    os.makedirs(dest_img_dir, exist_ok=True)
+    os.makedirs(dest_label_dir, exist_ok=True)
+    
+    # Copy selected files to destination
+    for file in selected_files:
+        shutil.copy(os.path.join(source_img_dir, file + '.jpg'), os.path.join(dest_img_dir, file + '.jpg'))
+        shutil.copy(os.path.join(source_label_dir, file + '.txt'), os.path.join(dest_label_dir, file + '.txt'))
+    
+    print(f"Copied {len(selected_files)} files to {dest_img_dir} and {dest_label_dir}")
+
+# Define source and destination paths
+source_root = r"D:\Dinesh\Sample"
+dest_root = r"D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset"
+
+dataset_splits = {
+    "train": (600, "train"),
+    "test": (200, "test"),
+    "val": (150, "val")
+}
+
+# Process each dataset split
+for split, (num_samples, folder_name) in dataset_splits.items():
+    select_and_copy_files(
+        source_img_dir=os.path.join(source_root, split, "images"),
+        source_label_dir=os.path.join(source_root, split, "labels"),
+        dest_img_dir=os.path.join(dest_root, folder_name, "images"),
+        dest_label_dir=os.path.join(dest_root, folder_name, "labels"),
+        num_samples=num_samples
+    )
+
+print("Dataset splitting completed.")
+
