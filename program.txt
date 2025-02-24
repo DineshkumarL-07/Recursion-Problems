@@ -1,6 +1,6 @@
 -- https://universe.roboflow.com/final-year-project-xlxtr/anomaly-detection-yjwgo
 -- https://universe.roboflow.com/dedsec/anomaly-detection-nfc3l/dataset/2
-
+https://github.com/gamalahmed3265/Count-entering-and-exiting-people-using-YOLOv8/tree/main
 
 train: D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\train
 val: D:\Dinesh\Normal_Activity_Model_Trained\Abnormal Dataset\val
